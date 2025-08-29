@@ -1,9 +1,6 @@
 from database.base import Base
 from sqlalchemy import Column, BigInteger, String, DateTime, Double, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
 import datetime
-from sqlalchemy.orm import mapped_column
-from database.models.role_rules import RoleRuleModel
 
 
 class RoleModel(Base):
