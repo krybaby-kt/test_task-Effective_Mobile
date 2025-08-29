@@ -10,7 +10,7 @@ async def main():
     web_api_config = uvicorn.Config(
         app="web_api:app",
         log_level="debug",
-        host="0.0.0.0",
+        host="localhost",
         port=8000,
         reload=False,
         workers=4,

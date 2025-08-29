@@ -6,12 +6,15 @@ from web_api.dependencies.cookies_auth import get_jwt_payload
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        if request.url.path in ["/docs", "/redoc", "/openapi.json"]:
+            return await call_next(request)
+            
         access_token = request.cookies.get("access_token")
         
         if not access_token:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Access token required"
+                content={"detail": "Access token required"}
             )
         
         payload = get_jwt_payload(access_token)
