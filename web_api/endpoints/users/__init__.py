@@ -6,8 +6,8 @@ from database.models.users import UserModel
 from web_api.endpoints.users.schematics import SignUpRequest, SignUpResponse, SignInRequest, SignInResponse, SignOutResponse
 import string
 from fastapi.responses import JSONResponse
-from web_api.dependencies.auth_middleware import AuthMiddleware
 from database.tools.sessions import SessionTool
+from web_api.dependencies.users_auth import get_user
 
 
 router = APIRouter()
@@ -24,7 +24,7 @@ async def web_api_sign_up(
     user_data: SignUpRequest
 ):
     if await UserTool.get_by_email(user_data.email):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email already exists")
     
     async with UserTool.lock:
         user_id: int = await UserTool.generate_unique_field_id(string.digits, length=12, return_type=int)
@@ -63,18 +63,21 @@ async def web_api_sign_in(
     user_data: SignInRequest
 ):
     if not user_data.email:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email is required")
     
     if not user_data.password:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is required")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Password is required")
     
     dbUser: UserModel = await UserTool.get_by_email(user_data.email)
 
     if not dbUser:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
     if not await UserTool.verify_and_migrate_password(dbUser, user_data.password):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    
+    if not dbUser.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User is not active")
 
     response = JSONResponse(
         status_code=status.HTTP_200_OK,
@@ -99,6 +102,7 @@ async def web_api_sign_in(
 )
 async def web_api_sign_out(
     request: Request,
+    dbUser: UserModel = Depends(get_user)
 ): 
     access_token = get_jwt_payload(request.cookies.get("access_token"))
     if not access_token:
@@ -111,5 +115,5 @@ async def web_api_sign_out(
         )
     )
     response.delete_cookie(key="access_token")
-    await SessionTool.delete_by_user_id_and_access_token(user_id=access_token.get("sub"), access_token=access_token.get("jti"))
+    await SessionTool.delete_by_user_id_and_access_token(user_id=dbUser.id, access_token=access_token)
     return response
