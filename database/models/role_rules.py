@@ -1,16 +1,16 @@
 from database.base import Base
 from sqlalchemy import Column, BigInteger, String, DateTime, Double, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
 import datetime
-from sqlalchemy.orm import mapped_column
-from database.models.role_rules import RoleRuleModel
+from database.models.roles import RoleModel
+from database.models.rules import RuleModel
 
 
-class RoleModel(Base):
-    __tablename__ = "roles"
-    name = Column(String, unique=True, primary_key=True)
+class RoleRuleModel(Base):
+    __tablename__ = "role_rules"
+    id = Column(BigInteger, unique=True, primary_key=True)
     
-    comment = Column(String, nullable=False)
+    role_name = Column(String, ForeignKey(RoleModel.name))
+    rule_name = Column(String, ForeignKey(RuleModel.name))
     
     creating_date = Column(DateTime, default=datetime.datetime.now)
     

@@ -14,3 +14,7 @@ class SessionTool(AsyncBaseIdSQLAlchemyCRUD):
         if len(dbSessions) == 0:
             return None
         return dbSessions[0]
+
+    @staticmethod
+    async def delete_by_user_id_and_access_token(user_id: int, access_token: str):
+        await SessionTool.delete_with_filters(filters=[SessionModel.user_id == user_id, SessionModel.access_token == access_token])

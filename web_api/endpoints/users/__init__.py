@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status
 from typing import Annotated, Literal
-from web_api.dependencies.users_auth import get_auth_type
-from web_api.dependencies.cookies_auth import set_auth_cookie
+from web_api.dependencies.cookies_auth import set_auth_cookie, get_jwt_payload
 from database.tools.users import UserTool
 from database.models.users import UserModel
-from web_api.endpoints.users.schematics import SignUpRequest, SignUpResponse
+from web_api.endpoints.users.schematics import SignUpRequest, SignUpResponse, SignInRequest, SignInResponse, SignOutResponse
 import string
 from fastapi.responses import JSONResponse
 from web_api.dependencies.auth_middleware import AuthMiddleware
@@ -12,9 +11,7 @@ from database.tools.sessions import SessionTool
 
 
 router = APIRouter()
-router.add_middleware(
-    AuthMiddleware
-)
+
 
 @router.post(
     '/sign-up', 
@@ -91,4 +88,28 @@ async def web_api_sign_in(
         access_token=access_token
     ))
     
+    return response
+
+
+@router.post(
+    '/sign-out',
+    description="Выйти из системы",
+    response_model=SignOutResponse,
+    response_model_exclude_none=True
+)
+async def web_api_sign_out(
+    request: Request,
+): 
+    access_token = get_jwt_payload(request.cookies.get("access_token"))
+    if not access_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token is required")
+
+    response = JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=dict(
+            success=True
+        )
+    )
+    response.delete_cookie(key="access_token")
+    await SessionTool.delete_by_user_id_and_access_token(user_id=access_token.get("sub"), access_token=access_token.get("jti"))
     return response

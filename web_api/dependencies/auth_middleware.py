@@ -7,7 +7,7 @@ from database.tools.sessions import SessionTool
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        if request.url.path in ["/docs", "/redoc", "/openapi.json", "/sign-up", "/sign-in"]:
+        if request.url.path in ["/docs", "/redoc", "/openapi.json", "/users/sign-up", "/users/sign-in"]:
             return await call_next(request)
             
         access_token = request.cookies.get("access_token")
