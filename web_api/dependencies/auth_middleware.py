@@ -29,6 +29,17 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 domain=None
             )
             return response
+        elif payload.get("jti"):
+            response = JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Expired access token"}
+            )
+            response.delete_cookie(
+                key="access_token",
+                path="/",
+                domain=None
+            )
+            return response
         
         response = await call_next(request)
         return response

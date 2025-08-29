@@ -11,6 +11,7 @@ class RoleModel(Base):
     name = Column(String, unique=True, primary_key=True)
     
     rules = mapped_column(ForeignKey(RuleModel.name))
+    comment = Column(String, nullable=False)
     
     creating_date = Column(DateTime, default=datetime.datetime.now)
     

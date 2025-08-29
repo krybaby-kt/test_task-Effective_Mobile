@@ -20,7 +20,6 @@ def create_jwt_token(user_id: int) -> str:
         "iat": now_timestamp,
         "nbf": now_timestamp,
         "exp": expiration_timestamp,
-        "iss": "cryptoside.tech"
     }
     
     return jwt.encode(
@@ -30,7 +29,7 @@ def create_jwt_token(user_id: int) -> str:
     )
 
 
-def set_auth_cookie(response: Response, user_id: int) -> None:
+def set_auth_cookie(response: Response, user_id: int) -> str:
     token = create_jwt_token(user_id)
     response.set_cookie(
         key="access_token",
@@ -41,6 +40,7 @@ def set_auth_cookie(response: Response, user_id: int) -> None:
         max_age=60 * 60 * 24 * 7,
         path="/"
     )
+    return token
 
 
 def get_jwt_payload(token: str) -> Optional[Dict[str, Any]]:
@@ -62,9 +62,6 @@ def get_jwt_payload(token: str) -> Optional[Dict[str, Any]]:
         if "sub" not in payload or "jti" not in payload:
             return None
             
-        if payload.get("iss") != "cryptoside.tech":
-            return None
-        
         payload["sub"] = int(payload["sub"])
         return payload
     except ExpiredSignatureError as ex_:
