@@ -28,8 +28,8 @@ class RoleRuleModel(Base):
     id = Column(BigInteger, unique=True, primary_key=True)
     
     # Ссылки на роль и правило
-    role_name = Column(String, ForeignKey(RoleModel.name), nullable=False)
-    rule_name = Column(String, ForeignKey(RuleModel.name), nullable=False)
+    role_name = Column(String, ForeignKey(RoleModel.name, ondelete="CASCADE"), nullable=False)
+    rule_name = Column(String, ForeignKey(RuleModel.name, ondelete="CASCADE"), nullable=False)
     
     # Метаданные
     creating_date = Column(DateTime, default=datetime.datetime.now, nullable=False)

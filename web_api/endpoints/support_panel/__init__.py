@@ -12,7 +12,7 @@ from web_api.endpoints.support_panel.schematics import SupportPanelResponse
 router = APIRouter(dependencies=[require_rule("support_panel")])
 
 
-@router.post(
+@router.get(
     '/', 
     description="Панель поддержки",
     response_model=SupportPanelResponse,
