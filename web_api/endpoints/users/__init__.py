@@ -7,10 +7,14 @@ from database.models.users import UserModel
 from web_api.endpoints.users.schematics import SignUpRequest, SignUpResponse
 import string
 from fastapi.responses import JSONResponse
+from web_api.dependencies.auth_middleware import AuthMiddleware
+from database.tools.sessions import SessionTool
 
 
 router = APIRouter()
-
+router.add_middleware(
+    AuthMiddleware
+)
 
 @router.post(
     '/sign-up', 
@@ -43,5 +47,48 @@ async def web_api_sign_up(
         )
     )
     access_token = set_auth_cookie(response=response, user_id=dbUser.id)
+    await SessionTool(dbUser.id).create(data=dict(
+        user_id=dbUser.id,
+        access_token=access_token
+    ))
+
+    return response
+
+
+@router.post(
+    '/sign-in',
+    description="Войти в систему",
+    response_model=SignInResponse,
+    response_model_exclude_none=True
+)
+async def web_api_sign_in(
+    request: Request,
+    user_data: SignInRequest
+):
+    if not user_data.email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required")
+    
+    if not user_data.password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is required")
+    
+    dbUser: UserModel = await UserTool.get_by_email(user_data.email)
+
+    if not dbUser:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or password")
+
+    if not await UserTool.verify_and_migrate_password(dbUser, user_data.password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or password")
+
+    response = JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=dict(
+            success=True
+        )
+    )
+    access_token = set_auth_cookie(response=response, user_id=dbUser.id)
+    await SessionTool(dbUser.id).create(data=dict(
+        user_id=dbUser.id,
+        access_token=access_token
+    ))
     
     return response
