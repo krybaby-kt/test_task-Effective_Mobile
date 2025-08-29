@@ -18,3 +18,11 @@ class SessionTool(AsyncBaseIdSQLAlchemyCRUD):
     @staticmethod
     async def delete_by_user_id_and_access_token(user_id: int, access_token: str):
         await SessionTool.delete_with_filters(filters=[SessionModel.user_id == user_id, SessionModel.access_token == access_token])
+
+    @staticmethod
+    async def delete_all_instead_of_current_user_id_and_access_token(user_id: int, access_token: str):
+        await SessionTool.delete_with_filters(filters=[SessionModel.user_id == user_id, SessionModel.access_token != access_token])
+    
+    @staticmethod
+    async def delete_all_by_user_id(user_id: int):
+        await SessionTool.delete_with_filters(filters=[SessionModel.user_id == user_id])

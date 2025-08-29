@@ -5,7 +5,7 @@ from typing import Optional
 class SignUpRequest(BaseModel):
     """Модель запроса для регистрации пользователя"""
     email: EmailStr = Field(description="Email пользователя")
-    password: str = Field(description="Пароль пользователя", min_length=8, max_length=100)
+    password: str = Field(description="Пароль пользователя", min_length=4, max_length=100)
 
 
 class SignUpResponse(BaseModel):
@@ -16,7 +16,7 @@ class SignUpResponse(BaseModel):
 class SignInRequest(BaseModel):
     """Модель запроса для входа в систему"""
     email: Optional[EmailStr] = Field(description="Email пользователя", default=None)
-    password: str = Field(description="Пароль пользователя", min_length=8, max_length=100)
+    password: str = Field(description="Пароль пользователя", min_length=4, max_length=100)
 
 
 class SignInResponse(BaseModel):
@@ -31,10 +31,15 @@ class SignOutResponse(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     """Модель запроса для смены пароля"""
-    old_password: str = Field(description="Старый пароль пользователя", min_length=8, max_length=100)
-    new_password: str = Field(description="Новый пароль пользователя", min_length=8, max_length=100)
+    old_password: str = Field(description="Старый пароль пользователя", min_length=4, max_length=100)
+    new_password: str = Field(description="Новый пароль пользователя", min_length=4, max_length=100)
 
 
 class ChangePasswordResponse(BaseModel):
     """Модель ответа для смены пароля"""
+    success: bool = Field(description="Успешность операции")
+
+
+class DeleteAccountResponse(BaseModel):
+    """Модель ответа для удаления аккаунта"""
     success: bool = Field(description="Успешность операции")

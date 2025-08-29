@@ -19,8 +19,6 @@ async def init_models():
 
 
 async def fill_database():
-    return
-
     from database.tools.users import UserTool
     from database.tools.sessions import SessionTool
     from database.tools.roles import RoleTool
@@ -86,19 +84,19 @@ async def fill_database():
     if not await UserTool.get_all():
         await UserTool.create(data=dict(
             email="admin@example.com",
-            password="admin",
+            password=UserTool.hash_password("admin"),
             role="admin",
             is_active=True
         ))
         await UserTool.create(data=dict(
             email="support@example.com",
-            password="support",
+            password=UserTool.hash_password("support"),
             role="support",
             is_active=True
         ))
         await UserTool.create(data=dict(
             email="user@example.com",
-            password="user",
+            password=UserTool.hash_password("user"),
             role="user",
             is_active=True
         ))

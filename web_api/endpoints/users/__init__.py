@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 from web_api.dependencies.cookies_auth import set_auth_cookie, get_jwt_payload
 from database.tools.users import UserTool
 from database.models.users import UserModel
-from web_api.endpoints.users.schematics import SignUpRequest, SignUpResponse, SignInRequest, SignInResponse, SignOutResponse
+from web_api.endpoints.users.schematics import SignUpRequest, SignUpResponse, SignInRequest, SignInResponse, SignOutResponse, ChangePasswordRequest, ChangePasswordResponse, DeleteAccountResponse
 import string
 from fastapi.responses import JSONResponse
 from database.tools.sessions import SessionTool
@@ -104,7 +104,7 @@ async def web_api_sign_out(
     request: Request,
     dbUser: UserModel = Depends(get_user)
 ): 
-    access_token = get_jwt_payload(request.cookies.get("access_token"))
+    access_token = request.cookies.get("access_token")
     if not access_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token is required")
 
@@ -117,3 +117,53 @@ async def web_api_sign_out(
     response.delete_cookie(key="access_token")
     await SessionTool.delete_by_user_id_and_access_token(user_id=dbUser.id, access_token=access_token)
     return response
+
+
+@router.post(
+    '/change-password',
+    description="Сменить пароль",
+    response_model=ChangePasswordResponse,
+    response_model_exclude_none=True
+)
+async def web_api_change_password(
+    request: Request,
+    user_data: ChangePasswordRequest,
+    dbUser: UserModel = Depends(get_user)
+):
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token is required")
+    
+    if not await UserTool.verify_and_migrate_password(dbUser, user_data.old_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email, username or password")
+    
+    await UserTool(dbUser.id).update(data={"password": UserTool.hash_password(user_data.new_password)})
+    await SessionTool.delete_all_instead_of_current_user_id_and_access_token(user_id=dbUser.id, access_token=access_token)
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=dict(
+            success=True
+        )
+    )
+
+
+@router.post(
+    '/delete-account',
+    description="Удалить аккаунт",
+    response_model=DeleteAccountResponse,
+    response_model_exclude_none=True
+)
+async def web_api_delete_account(
+    request: Request,
+    dbUser: UserModel = Depends(get_user)
+):
+    await UserTool(dbUser.id).update(data=dict(is_active=False))
+    await SessionTool.delete_all_by_user_id(user_id=dbUser.id)
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=dict(
+            success=True
+        )
+    )

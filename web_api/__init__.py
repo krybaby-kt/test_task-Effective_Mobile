@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from web_api.dependencies.auth_middleware import AuthMiddleware
+
 from web_api.endpoints import users
+from web_api.endpoints import user_panel
+from web_api.endpoints import support_panel
+from web_api.endpoints import admin_panel
 
 
 app = FastAPI(
@@ -21,3 +25,6 @@ app.add_middleware(
 )
 
 app.include_router(users.router, prefix="/users")
+app.include_router(user_panel.router, prefix="/user-panel")
+app.include_router(support_panel.router, prefix="/support-panel")
+app.include_router(admin_panel.router, prefix="/admin-panel")
