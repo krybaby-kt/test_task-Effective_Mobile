@@ -1,3 +1,8 @@
+"""
+Эндпоинты для управления пользователями.
+
+Содержит маршруты для регистрации, входа, выхода, смены пароля и удаления аккаунта.
+"""
 from fastapi import APIRouter, Request, Depends, HTTPException, status
 from typing import Annotated, Literal
 from web_api.dependencies.cookies_auth import set_auth_cookie, get_jwt_payload
@@ -9,7 +14,7 @@ from fastapi.responses import JSONResponse
 from database.tools.sessions import SessionTool
 from web_api.dependencies.users_auth import get_user
 
-
+# Router для пользовательских операций
 router = APIRouter()
 
 
@@ -23,6 +28,22 @@ async def web_api_sign_up(
     request: Request,
     user_data: SignUpRequest
 ):
+    """
+    Регистрирует нового пользователя в системе.
+    
+    Создает новый аккаунт пользователя с автоматическим назначением роли "user",
+    устанавливает JWT токен в cookies и создает сессию.
+    
+    Args:
+        request: HTTP запрос
+        user_data: Данные для регистрации (email, пароль)
+        
+    Returns:
+        JSON ответ с результатом операции и установленным auth cookie
+        
+    Raises:
+        HTTPException: 401 если email уже существует
+    """
     if await UserTool.get_by_email(user_data.email):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email already exists")
     
@@ -62,6 +83,22 @@ async def web_api_sign_in(
     request: Request,
     user_data: SignInRequest
 ):
+    """
+    Аутентифицирует пользователя и создает сессию.
+    
+    Проверяет учетные данные, поддерживает миграцию паролей с SHA-256 на bcrypt,
+    устанавливает JWT токен в cookies и создает новую сессию.
+    
+    Args:
+        request: HTTP запрос
+        user_data: Данные для входа (email, пароль)
+        
+    Returns:
+        JSON ответ с результатом операции и установленным auth cookie
+        
+    Raises:
+        HTTPException: 401 если неверные учетные данные или пользователь неактивен
+    """
     if not user_data.email:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email is required")
     
@@ -103,7 +140,22 @@ async def web_api_sign_in(
 async def web_api_sign_out(
     request: Request,
     dbUser: UserModel = Depends(get_user)
-): 
+):
+    """
+    Завершает текущую сессию пользователя.
+    
+    Удаляет JWT токен из cookies, удаляет сессию из базы данных.
+    
+    Args:
+        request: HTTP запрос с токеном в cookies
+        dbUser: Текущий пользователь из dependency
+        
+    Returns:
+        JSON ответ с результатом операции
+        
+    Raises:
+        HTTPException: 401 если токен отсутствует
+    """ 
     access_token = request.cookies.get("access_token")
     if not access_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token is required")
@@ -130,6 +182,23 @@ async def web_api_change_password(
     user_data: ChangePasswordRequest,
     dbUser: UserModel = Depends(get_user)
 ):
+    """
+    Изменяет пароль текущего пользователя.
+    
+    Проверяет старый пароль, обновляет на новый и завершает все остальные сессии
+    пользователя, кроме текущей.
+    
+    Args:
+        request: HTTP запрос с токеном в cookies
+        user_data: Данные для смены пароля (старый и новый пароли)
+        dbUser: Текущий пользователь из dependency
+        
+    Returns:
+        JSON ответ с результатом операции
+        
+    Raises:
+        HTTPException: 401 если токен отсутствует, 400 если неверный старый пароль
+    """
     access_token = request.cookies.get("access_token")
     if not access_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token is required")
@@ -158,6 +227,19 @@ async def web_api_delete_account(
     request: Request,
     dbUser: UserModel = Depends(get_user)
 ):
+    """
+    Деактивирует аккаунт пользователя.
+    
+    Помечает пользователя как неактивного и удаляет все его сессии.
+    Аккаунт становится недоступным для входа.
+    
+    Args:
+        request: HTTP запрос
+        dbUser: Текущий пользователь из dependency
+        
+    Returns:
+        JSON ответ с результатом операции
+    """
     await UserTool(dbUser.id).update(data=dict(is_active=False))
     await SessionTool.delete_all_by_user_id(user_id=dbUser.id)
 

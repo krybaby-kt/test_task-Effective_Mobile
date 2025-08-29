@@ -1,3 +1,9 @@
+"""
+Главный модуль FastAPI приложения.
+
+Конфигурирует веб-приложение с аутентификацией, CORS и эндпоинтами
+для управления пользователями и различных панелей доступа.
+"""
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from web_api.dependencies.auth_middleware import AuthMiddleware
@@ -8,6 +14,7 @@ from web_api.endpoints import support_panel
 from web_api.endpoints import admin_panel
 
 
+# FastAPI приложение с конфигурацией API документации
 app = FastAPI(
     title="Test Task Effective Mobile",
     description="Backend API for Test Task Effective Mobile",

@@ -1,3 +1,6 @@
+"""
+Middleware для аутентификации пользователей через JWT токены в cookies.
+"""
 from fastapi import Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -6,7 +9,23 @@ from database.tools.sessions import SessionTool
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware для проверки аутентификации пользователей.
+    
+    Проверяет наличие и валидность JWT токена в cookies для всех запросов,
+    кроме публичных эндпоинтов (регистрация, вход, документация).
+    """
     async def dispatch(self, request: Request, call_next):
+        """
+        Обрабатывает каждый HTTP запрос для проверки аутентификации.
+        
+        Args:
+            request: HTTP запрос
+            call_next: Следующий обработчик в цепочке middleware
+            
+        Returns:
+            HTTP ответ с проверкой токена или ошибкой аутентификации
+        """
         if request.url.path in ["/docs", "/redoc", "/openapi.json", "/users/sign-up", "/users/sign-in"]:
             return await call_next(request)
             

@@ -1,3 +1,8 @@
+"""
+Инструменты для работы с моделью пользователей.
+
+Обеспечивает CRUD операции, хеширование паролей и миграцию системы хеширования.
+"""
 from database.basic_tools import AsyncBaseIdSQLAlchemyCRUD
 from database.models.users import UserModel
 from asyncio import Lock
@@ -9,12 +14,35 @@ from utils.exception_handler.handler import handle_async
 
 
 class UserTool(AsyncBaseIdSQLAlchemyCRUD):
+    """
+    Класс для управления пользователями с расширенным функционалом.
+    
+    Наследует базовые CRUD операции и добавляет специализированные
+    методы для аутентификации и работы с паролями.
+    
+    Attributes:
+        model: Модель UserModel
+        field_id: Поле "id" как первичный ключ
+        lock: Блокировка для потокобезопасной работы
+    
+    Note:
+        Поддерживает миграцию паролей с SHA-256 на bcrypt для обратной совместимости.
+    """
     model = UserModel
     field_id = "id"
     lock: Lock = Lock()
 
     @staticmethod
     async def get_by_email(email: str) -> UserModel:
+        """
+        Получает пользователя по адресу электронной почты.
+        
+        Args:
+            email: Адрес электронной почты пользователя
+            
+        Returns:
+            Объект пользователя или None если не найден
+        """
         dbUsers: list[UserModel] = await UserTool.get_all_with_filters(filters=[UserModel.email == email])
         if len(dbUsers) == 0:
             return None

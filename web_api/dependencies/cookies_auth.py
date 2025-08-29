@@ -1,3 +1,8 @@
+"""
+Модуль для работы с JWT токенами в cookies.
+
+Предоставляет функции для создания, валидации и установки JWT токенов.
+"""
 import datetime
 from jose import jwt, JWTError, ExpiredSignatureError
 from fastapi import Response
@@ -8,6 +13,15 @@ import time
 
 
 def create_jwt_token(user_id: int) -> str:
+    """
+    Создает JWT токен для пользователя.
+    
+    Args:
+        user_id: Идентификатор пользователя
+        
+    Returns:
+        Подписанный JWT токен со сроком действия 7 дней
+    """
     now = datetime.datetime.now(datetime.timezone.utc)
     now_timestamp = int(time.time())
     expiration = now + datetime.timedelta(seconds=60 * 60 * 24 * 7)
@@ -30,6 +44,16 @@ def create_jwt_token(user_id: int) -> str:
 
 
 def set_auth_cookie(response: Response, user_id: int) -> str:
+    """
+    Создает JWT токен и устанавливает его в секюрную cookie.
+    
+    Args:
+        response: HTTP ответ для установки cookie
+        user_id: Идентификатор пользователя
+        
+    Returns:
+        Созданный токен
+    """
     token = create_jwt_token(user_id)
     response.set_cookie(
         key="access_token",
@@ -44,6 +68,15 @@ def set_auth_cookie(response: Response, user_id: int) -> str:
 
 
 def get_jwt_payload(token: str) -> Optional[Dict[str, Any]]:
+    """
+    Валидирует JWT токен и извлекает его payload.
+    
+    Args:
+        token: JWT токен для валидации
+        
+    Returns:
+        Словарь с payload токена или None если токен невалиден
+    """
     try:
         payload = jwt.decode(
             token, 
