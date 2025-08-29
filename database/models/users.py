@@ -11,7 +11,7 @@ class UserModel(Base):
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     
-    status = Column(String, ForeignKey(RoleModel.name))
+    role = Column(String, ForeignKey(RoleModel.name))
     is_active = Column(Boolean, default=True)
 
     creating_date = Column(DateTime, default=datetime.datetime.now)

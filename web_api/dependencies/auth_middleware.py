@@ -1,15 +1,31 @@
-from fastapi import Header, Cookie
-from typing import Annotated, Union
-from database.tools.users import UserTool
-from web_api.dependencies.auth import get_jwt_payload
-from database.models.users import UserModel
-from typing import Literal
+from fastapi import Request, status, HTTPException
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from web_api.dependencies.cookies_auth import get_jwt_payload
 
 
-async def get_user(
-    access_token: Annotated[str | None, Cookie(alias="access_token")] = None,
-) -> Union[UserModel, None]:
-    if payload_temp := get_jwt_payload(access_token):
-        return await UserTool(payload_temp["sub"]).get()
-    return None
-
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        access_token = request.cookies.get("access_token")
+        
+        if not access_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Access token required"
+            )
+        
+        payload = get_jwt_payload(access_token)
+        if payload is None:
+            response = JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Invalid or expired access token"}
+            )
+            response.delete_cookie(
+                key="access_token",
+                path="/",
+                domain=None
+            )
+            return response
+        
+        response = await call_next(request)
+        return response
